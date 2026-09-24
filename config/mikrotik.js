@@ -5,7 +5,7 @@ class MikrotikConfig {
     this.host = process.env.MIKROTIK_IP;
     this.user = process.env.MIKROTIK_API_USER;
     this.password = process.env.MIKROTIK_API_PASSWORD;
-    this.port = parseInt(process.env.MIKROTIK_API_PORT) || 8728;
+    this.port = parseInt(process.env.MIKROTIK_API_PORT) || 3241;
   }
 
   // Fungsi untuk membuat koneksi ke MikroTik

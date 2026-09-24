@@ -106,6 +106,9 @@
     </div>
 
     <script>
+        // URL Domain Vercel Kamu
+        const VERCEL_URL = 'https://mikrotik-magang.vercel.app';
+
         const form = document.getElementById('registerForm');
         const submitBtn = document.getElementById('submitBtn');
         const btnText = document.getElementById('btnText');
@@ -135,7 +138,7 @@
             btnText.innerHTML = '<span class="loading"></span> Memproses...';
 
             try {
-                const response = await fetch('/api/register', {
+                const response = await fetch(`${VERCEL_URL}/api/register`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'

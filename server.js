@@ -21,7 +21,7 @@ storageConfig.initialize().catch(console.error);
 // Initialize Mikrotik connection
 mikrotikConfig.login().catch(console.error);
 
-// Routes
+// Routes Tampilan Web
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
@@ -40,18 +40,15 @@ app.post('/api/register', async (req, res) => {
   try {
     const { name, email, phone, username, password } = req.body;
     
-    // Validate input
     if (!name || !email || !phone || !username || !password) {
       return res.status(400).json({ success: false, message: 'All fields are required' });
     }
     
-    // Check if username already exists
     const existingUser = await storageConfig.getUserByUsername(username);
     if (existingUser) {
       return res.status(400).json({ success: false, message: 'Username already exists' });
     }
     
-    // Add user to storage
     await storageConfig.addUser({ name, email, phone, username, password });
     
     res.json({ success: true, message: 'Registration successful. Please wait for admin approval.' });
@@ -61,7 +58,7 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-// Get all users (admin only)
+// Get all users
 app.get('/api/users', async (req, res) => {
   try {
     const users = await storageConfig.getAllUsers();
@@ -72,7 +69,7 @@ app.get('/api/users', async (req, res) => {
   }
 });
 
-// Approve user (admin only)
+// Approve user & kirim ke MikroTik via Tunnel.id
 app.post('/api/approve', async (req, res) => {
   try {
     const { username, adminName } = req.body;
@@ -81,11 +78,10 @@ app.post('/api/approve', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Username and admin name are required' });
     }
     
-    // Update user status in storage
     const user = await storageConfig.approveUser(username, adminName);
-    
-    // Add user to Mikrotik hotspot
     const userData = await storageConfig.getUserByUsername(username);
+    
+    // Tembak ke MikroTik via Tunnel.id
     await mikrotikConfig.addUserToHotspot(userData.username, userData.password);
     
     res.json({ success: true, message: 'User approved successfully' });
@@ -95,7 +91,7 @@ app.post('/api/approve', async (req, res) => {
   }
 });
 
-// Reject user (admin only)
+// Reject user
 app.post('/api/reject', async (req, res) => {
   try {
     const { username, adminName } = req.body;
@@ -113,7 +109,7 @@ app.post('/api/reject', async (req, res) => {
   }
 });
 
-// Delete user (admin only)
+// Delete user
 app.delete('/api/users/:username', async (req, res) => {
   try {
     const { username } = req.params;
@@ -137,24 +133,20 @@ app.post('/api/login', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Username and password are required' });
     }
     
-    // Get user from storage
     const user = await storageConfig.getUserByUsername(username);
     
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
     
-    // Check if password matches
     if (user.password !== password) {
       return res.status(401).json({ success: false, message: 'Invalid password' });
     }
     
-    // Check if user is approved
     if (user.status !== 'approved') {
       return res.status(403).json({ success: false, message: 'User not approved yet' });
     }
     
-    // Validate with Mikrotik
     const mikrotikResult = await mikrotikConfig.validateLogin(username, password);
     
     if (mikrotikResult.success) {
@@ -196,10 +188,12 @@ app.post('/api/admin/login', (req, res) => {
   }
 });
 
-// Start server
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-  console.log(`Server running on http://192.168.11.247:${PORT}`);
-  console.log(`Register page: http://192.168.11.247:${PORT}/register.html`);
-  console.log(`Admin page: http://192.168.11.247:${PORT}/admin.html`);
-});
+// Jalankan server lokal jika di-test di laptop
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`Server lokal berjalan di http://localhost:${PORT}`);
+  });
+}
+
+// Export serverless untuk Vercel
+module.exports = app;

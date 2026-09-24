@@ -1,9 +1,10 @@
-const fs = require('fs').promises;
 const path = require('path');
+const fs = require('fs').promises;
 
 class StorageConfig {
   constructor() {
-    this.dataFile = path.join(__dirname, '..', 'data', 'users.json');
+    // Di Vercel serverless, hanya folder /tmp yang bisa ditulis
+    this.dataFile = path.join('/tmp', 'users.json');
     this.data = {
       users: []
     };
@@ -11,23 +12,17 @@ class StorageConfig {
 
   async initialize() {
     try {
-      // Create data directory if it doesn't exist
-      const dataDir = path.join(__dirname, '..', 'data');
-      await fs.mkdir(dataDir, { recursive: true });
-
-      // Load existing data or create new file
       try {
         const fileContent = await fs.readFile(this.dataFile, 'utf8');
         this.data = JSON.parse(fileContent);
         console.log('Storage loaded successfully');
       } catch (error) {
-        // File doesn't exist, create new one
+        // Jika file belum ada di /tmp, buat file baru
         await this.saveData();
         console.log('Storage initialized successfully');
       }
     } catch (error) {
       console.error('Error initializing storage:', error);
-      throw error;
     }
   }
 
@@ -36,7 +31,6 @@ class StorageConfig {
       await fs.writeFile(this.dataFile, JSON.stringify(this.data, null, 2), 'utf8');
     } catch (error) {
       console.error('Error saving data:', error);
-      throw error;
     }
   }
 
