@@ -408,7 +408,7 @@
             const password = document.getElementById('adminPassword').value;
 
             try {
-                const response = await fetch('http://192.168.11.247:3000/api/admin/login', {
+                const response = await fetch('/api/admin/login',  {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -468,7 +468,7 @@
             emptyState.style.display = 'none';
 
             try {
-                const response = await fetch('http://192.168.11.247:3000/api/users');
+                const response = await fetch('/api/users');
                 const data = await response.json();
 
                 if (data.success) {
@@ -525,7 +525,7 @@
             if (!confirm(`Approve user ${username}?`)) return;
 
             try {
-                const response = await fetch('http://192.168.11.247:3000/api/approve', {
+                const response = await fetch('/api/approve', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -550,7 +550,7 @@
             if (!confirm(`Reject user ${username}?`)) return;
 
             try {
-                const response = await fetch('http://192.168.11.247:3000/api/reject', {
+                const response = await fetch('/api/reject', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -575,7 +575,7 @@
             if (!confirm(`Hapus user ${username}?`)) return;
 
             try {
-                const response = await fetch(`http://192.168.11.247:3000/api/users/${username}`, {
+                const response = await fetch(`/api/users/${username}`, {
                     method: 'DELETE'
                 });
 
