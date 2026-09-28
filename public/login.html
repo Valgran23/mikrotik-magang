@@ -1,118 +1,129 @@
 <script>
-    const VERCEL_URL = '';
+    document.addEventListener('DOMContentLoaded', () => {
+        const VERCEL_URL = '';
 
-    const form = document.getElementById('loginForm');
-    const submitBtn = document.getElementById('submitBtn');
-    const btnText = document.getElementById('btnText');
-    const message = document.getElementById('message');
-    const statusCheck = document.getElementById('statusCheck');
+        const form = document.getElementById('loginForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const btnText = document.getElementById('btnText');
+        const message = document.getElementById('message');
+        const statusCheck = document.getElementById('statusCheck');
 
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
+        // Pastikan form ada sebelum memasang event listener
+        if (form) {
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
 
-        const usernameVal = document.getElementById('username').value;
-        const passwordVal = document.getElementById('password').value;
+                const usernameVal = document.getElementById('username').value;
+                const passwordVal = document.getElementById('password').value;
 
-        // Show loading
-        submitBtn.disabled = true;
-        btnText.innerHTML = '<span class="loading"></span> Memproses...';
+                // Show loading
+                if (submitBtn) submitBtn.disabled = true;
+                if (btnText) btnText.innerHTML = '<span class="loading"></span> Memproses...';
 
-        try {
-            // 1. Cek status approval & password di Backend Vercel
-            const response = await fetch(`${VERCEL_URL}/api/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: usernameVal, password: passwordVal })
-            });
+                try {
+                    // 1. Cek status approval & password di Backend Vercel
+                    const response = await fetch(`${VERCEL_URL}/api/login`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username: usernameVal, password: passwordVal })
+                    });
 
-            const data = await response.json();
+                    const data = await response.json();
 
-            if (data.success) {
-                showMessage(`Selamat datang, ${data.user.name}! Mengaktifkan internet...`, 'success');
-                
-                // 2. Jika Approved, Buat Form Temp & Kirim Autentikasi Langsung ke Gateway MikroTik
-                setTimeout(() => {
-                    const mktForm = document.createElement('form');
-                    mktForm.method = 'POST';
-                    // Alamat IP Gateway Hotspot MikroTik lokal
-                    mktForm.action = 'http://192.168.88.1/login'; 
+                    if (data.success) {
+                        showMessage(`Selamat datang, ${data.user.name}! Mengaktifkan internet...`, 'success');
+                        
+                        // 2. Jika Approved, Buat Form Temp & Kirim Autentikasi Langsung ke Gateway MikroTik
+                        setTimeout(() => {
+                            const mktForm = document.createElement('form');
+                            mktForm.method = 'POST';
+                            // Alamat IP Gateway Hotspot MikroTik lokal
+                            mktForm.action = 'http://192.168.88.1/login'; 
 
-                    const userInp = document.createElement('input');
-                    userInp.type = 'hidden';
-                    userInp.name = 'username';
-                    userInp.value = usernameVal;
+                            const userInp = document.createElement('input');
+                            userInp.type = 'hidden';
+                            userInp.name = 'username';
+                            userInp.value = usernameVal;
 
-                    const passInp = document.createElement('input');
-                    passInp.type = 'hidden';
-                    passInp.name = 'password';
-                    passInp.value = passwordVal;
+                            const passInp = document.createElement('input');
+                            passInp.type = 'hidden';
+                            passInp.name = 'password';
+                            passInp.value = passwordVal;
 
-                    mktForm.appendChild(userInp);
-                    mktForm.appendChild(passInp);
-                    document.body.appendChild(mktForm);
+                            mktForm.appendChild(userInp);
+                            mktForm.appendChild(passInp);
+                            document.body.appendChild(mktForm);
 
-                    mktForm.submit(); // Eksekusi Login MikroTik
-                }, 1000);
+                            mktForm.submit(); // Eksekusi Login MikroTik
+                        }, 1000);
 
-            } else {
-                showMessage(data.message || 'Login gagal!', 'error');
-                submitBtn.disabled = false;
-                btnText.textContent = 'Login';
-            }
-        } catch (error) {
-            showMessage('Backend error, mencoba koneksi langsung ke MikroTik...', 'info');
-            setTimeout(() => {
-                HTMLFormElement.prototype.submit.call(form);
-            }, 1000);
-        }
-    });
-
-    function toggleStatusCheck() {
-        statusCheck.classList.toggle('show');
-    }
-
-    async function checkStatus() {
-        const username = document.getElementById('checkUsername').value;
-        const statusResult = document.getElementById('statusResult');
-
-        if (!username) {
-            statusResult.textContent = 'Masukkan username';
-            statusResult.className = 'status-result not-found';
-            statusResult.style.display = 'block';
-            return;
-        }
-
-        try {
-            const response = await fetch(`${VERCEL_URL}/api/status/${username}`);
-            const data = await response.json();
-
-            if (data.success) {
-                statusResult.textContent = `Status: ${data.status.toUpperCase()}`;
-                statusResult.className = `status-result ${data.status}`;
-                statusResult.style.display = 'block';
-
-                if (data.status === 'pending') {
-                    statusResult.textContent += ' - Menunggu approval admin';
-                } else if (data.status === 'approved') {
-                    statusResult.textContent += ' - Silakan login';
-                } else if (data.status === 'rejected') {
-                    statusResult.textContent += ' - Registrasi ditolak';
+                    } else {
+                        showMessage(data.message || 'Login gagal!', 'error');
+                        if (submitBtn) submitBtn.disabled = false;
+                        if (btnText) btnText.textContent = 'Login';
+                    }
+                } catch (error) {
+                    showMessage('Backend error, mencoba koneksi langsung ke MikroTik...', 'info');
+                    setTimeout(() => {
+                        HTMLFormElement.prototype.submit.call(form);
+                    }, 1000);
                 }
-            } else {
-                statusResult.textContent = data.message;
+            });
+        }
+
+        // Fungsi Global untuk Tombol Cek Status & Message
+        window.toggleStatusCheck = function() {
+            if (statusCheck) statusCheck.classList.toggle('show');
+        };
+
+        window.checkStatus = async function() {
+            const checkUserEl = document.getElementById('checkUsername');
+            const username = checkUserEl ? checkUserEl.value : '';
+            const statusResult = document.getElementById('statusResult');
+
+            if (!statusResult) return;
+
+            if (!username) {
+                statusResult.textContent = 'Masukkan username';
+                statusResult.className = 'status-result not-found';
+                statusResult.style.display = 'block';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${VERCEL_URL}/api/status/${username}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    statusResult.textContent = `Status: ${data.status.toUpperCase()}`;
+                    statusResult.className = `status-result ${data.status}`;
+                    statusResult.style.display = 'block';
+
+                    if (data.status === 'pending') {
+                        statusResult.textContent += ' - Menunggu approval admin';
+                    } else if (data.status === 'approved') {
+                        statusResult.textContent += ' - Silakan login';
+                    } else if (data.status === 'rejected') {
+                        statusResult.textContent += ' - Registrasi ditolak';
+                    }
+                } else {
+                    statusResult.textContent = data.message;
+                    statusResult.className = 'status-result not-found';
+                    statusResult.style.display = 'block';
+                }
+            } catch (error) {
+                statusResult.textContent = 'Gagal mengecek status (Server backend tidak aktif)';
                 statusResult.className = 'status-result not-found';
                 statusResult.style.display = 'block';
             }
-        } catch (error) {
-            statusResult.textContent = 'Gagal mengecek status (Server backend tidak aktif)';
-            statusResult.className = 'status-result not-found';
-            statusResult.style.display = 'block';
-        }
-    }
+        };
 
-    function showMessage(text, type) {
-        message.textContent = text;
-        message.className = `message ${type}`;
-        message.style.display = 'block';
-    }
+        function showMessage(text, type) {
+            if (message) {
+                message.textContent = text;
+                message.className = `message ${type}`;
+                message.style.display = 'block';
+            }
+        }
+    });
 </script>
