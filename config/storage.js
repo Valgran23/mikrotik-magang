@@ -1,41 +1,42 @@
-const path = require('path');
-const fs = require('fs').promises;
+const { Redis } = require('@upstash/redis');
 
 class StorageConfig {
   constructor() {
-    this.dataFile = path.join('/tmp', 'users.json');
-    // Menggunakan variabel global Node.js agar data bertahan di memori instance Vercel
-    if (!global.usersData) {
-      global.usersData = [];
-    }
+    // Membaca kredensial dari Environment Variables Vercel
+    this.redis = new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN,
+    });
+    this.KEY = 'hotspot_users';
   }
 
   async initialize() {
+    // Tidak perlu inisialisasi file lokal lagi
+    return true;
+  }
+
+  async getAllUsers() {
     try {
-      const fileContent = await fs.readFile(this.dataFile, 'utf8');
-      const parsed = JSON.parse(fileContent);
-      if (parsed && Array.isArray(parsed.users)) {
-        global.usersData = parsed.users;
-      }
+      const users = await this.redis.get(this.KEY);
+      return users || [];
     } catch (error) {
-      await this.saveData();
+      console.error('Error fetching users from Upstash Redis:', error);
+      return [];
     }
   }
 
-  async saveData() {
+  async saveData(users) {
     try {
-      await fs.writeFile(
-        this.dataFile, 
-        JSON.stringify({ users: global.usersData }, null, 2), 
-        'utf8'
-      );
+      await this.redis.set(this.KEY, users);
     } catch (error) {
-      console.error('Error saving data to /tmp:', error);
+      console.error('Error saving data to Upstash Redis:', error);
     }
   }
 
   async addUser(userData) {
-    const existing = global.usersData.find(u => u.username === userData.username);
+    const users = await this.getAllUsers();
+    const existing = users.find(u => u.username === userData.username);
+    
     if (existing) {
       throw new Error('Username already exists');
     }
@@ -53,50 +54,49 @@ class StorageConfig {
       approvedBy: ''
     };
 
-    global.usersData.push(newUser);
-    await this.saveData();
+    users.push(newUser);
+    await this.saveData(users);
     return newUser;
   }
 
-  async getAllUsers() {
-    // Selalu pastikan membaca dari memori global Vercel
-    return global.usersData || [];
-  }
-
   async approveUser(username, adminName) {
-    const user = global.usersData.find(u => u.username === username);
+    const users = await this.getAllUsers();
+    const user = users.find(u => u.username === username);
     if (!user) throw new Error('User not found');
 
     user.status = 'approved';
     user.approvedAt = new Date().toISOString();
     user.approvedBy = adminName;
 
-    await this.saveData();
+    await this.saveData(users);
     return user;
   }
 
   async rejectUser(username, adminName) {
-    const user = global.usersData.find(u => u.username === username);
+    const users = await this.getAllUsers();
+    const user = users.find(u => u.username === username);
     if (!user) throw new Error('User not found');
 
     user.status = 'rejected';
     user.approvedAt = new Date().toISOString();
     user.approvedBy = adminName;
 
-    await this.saveData();
+    await this.saveData(users);
     return user;
   }
 
   async getUserByUsername(username) {
-    return global.usersData.find(u => u.username === username) || null;
+    const users = await this.getAllUsers();
+    return users.find(u => u.username === username) || null;
   }
 
   async deleteUser(username) {
-    const index = global.usersData.findIndex(u => u.username === username);
+    let users = await this.getAllUsers();
+    const index = users.findIndex(u => u.username === username);
     if (index === -1) throw new Error('User not found');
 
-    global.usersData.splice(index, 1);
-    await this.saveData();
+    users.splice(index, 1);
+    await this.saveData(users);
     return true;
   }
 }
