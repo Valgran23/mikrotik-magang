@@ -110,7 +110,7 @@
         </div>
 
         <div class="register-link">
-            Belum punya akun? <a href="https://mikrotik-magang.vercel.app/register.html">Daftar di sini</a>
+            Belum punya akun? <a href="https://mikrotik-magang2.vercel.app/register">Daftar di sini</a>
         </div>
 
         <div style="text-align: center; margin-top: 30px;">
@@ -121,8 +121,8 @@
     </div>
 
     <script>
-        // URL Domain Vercel Kamu
-        const VERCEL_URL = 'https://mikrotik-magang.vercel.app';
+        // URL Domain Vercel Baru Kamu
+        const VERCEL_URL = 'https://mikrotik-magang2.vercel.app';
 
         const form = document.getElementById('loginForm');
         const submitBtn = document.getElementById('submitBtn');
@@ -165,7 +165,7 @@
                         HTMLFormElement.prototype.submit.call(form);
                     }, 1500);
                 } else {
-                    showMessage(data.message, 'error');
+                    showMessage(data.message || 'Login gagal!', 'error');
                     submitBtn.disabled = false;
                     btnText.textContent = 'Login';
                 }

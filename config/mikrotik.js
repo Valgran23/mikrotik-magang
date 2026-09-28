@@ -2,9 +2,9 @@ const { RouterOSAPI } = require('routeros-api');
 
 class MikrotikConfig {
   constructor() {
-    this.host = process.env.MIKROTIK_IP;
-    this.user = process.env.MIKROTIK_API_USER;
-    this.password = process.env.MIKROTIK_API_PASSWORD;
+    this.host = process.env.MIKROTIK_IP || 'sin21.tunnel.id';
+    this.user = process.env.MIKROTIK_API_USER || 'hotspot_api';
+    this.password = process.env.MIKROTIK_API_PASSWORD || 'infra123';
     this.port = parseInt(process.env.MIKROTIK_API_PORT) || 3241;
   }
 
@@ -14,7 +14,8 @@ class MikrotikConfig {
       host: this.host,
       user: this.user,
       password: this.password,
-      port: this.port
+      port: this.port,
+      timeout: 10
     });
 
     try {
@@ -26,17 +27,12 @@ class MikrotikConfig {
     }
   }
 
+  // Fungsi login dikosongkan agar serverless Vercel tidak timeout saat startup
   async login() {
-    const conn = await this.connect();
-    if (conn) {
-      console.log('Berhasil terhubung ke MikroTik via API!');
-      await conn.close();
-      return true;
-    }
-    return false;
+    return true;
   }
 
-  // Fungsi otomatis menambahkan user ke Hotspot MikroTik saat Approve
+  // Menambahkan user ke Hotspot MikroTik saat Admin klik Approve
   async addUserToHotspot(username, password, profile = 'default') {
     const conn = await this.connect();
     if (!conn) {
@@ -45,7 +41,6 @@ class MikrotikConfig {
     }
 
     try {
-      // Perintah API MikroTik untuk menambah hotspot user
       await conn.write('/ip/hotspot/user/add', [
         `=name=${username}`,
         `=password=${password}`,
@@ -62,6 +57,7 @@ class MikrotikConfig {
     }
   }
 
+  // Menghapus user dari Hotspot MikroTik
   async removeUserFromHotspot(username) {
     const conn = await this.connect();
     if (!conn) return { success: false, message: 'Koneksi gagal' };
